@@ -53,6 +53,13 @@ L2Normzs=zeros(1,nr);L2Normxs=zeros(1,nr);
 L2Normpressure=zeros(1,nr);
 
 % !! The norm of seismograms doesnt work in heterogeneous media!(the time window position is not correct)
+if model==2
+    disp('**!!!The norm of seismograms doesnt work in heterogeneous media!!!**(the time window position is not correct in the original codes)');
+end
+
+
+
+
 for c=1:nr
     norm1=max(abs([routputx(c,:),routputz(c,:)]));
     norm2=max(abs([as_ux(c,:),as_uz(c,:)]));
