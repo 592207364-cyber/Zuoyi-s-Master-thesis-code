@@ -1,0 +1,82 @@
+%% You can run this code directly for CG-Elastic FD Stability limit
+clearvars;clc;close all;
+FD='CG';
+sourcetype=2;
+model=1;
+B_Set_all_the_parameters;
+color = [
+    0.620,  0.792,  0.882;   % CGFD Elastic 1 (Light Blue)
+    0.420,  0.682,  0.839;   % CGFD Elastic 2 (Medium Light Blue)
+    0.192,  0.510,  0.741;   % CGFD Elastic 3 (Medium Dark Blue)
+    0.031,  0.318,  0.612;   % CGFD Elastic 4 (Dark Blue)
+    0.843,  0.098,  0.110;   % CGFD Acoustic  (Brick Red)
+    0.000,  0.000,  0.000;   % SGFD           (Pure Black)
+    0.500,  0.500,  0.500;   % Padding (Gray)
+    0.500,  0.500,  0.500;   % Padding (Gray)
+    0.500,  0.500,  0.500    % Padding (Gray)
+];
+% gammarange=0.2:0.2:0.9;
+% gammarange=0.2:0.2:1;
+gammarange=1;
+% gammarange=0.1:0.1:0.9;%for .mat saving
+ % gammarange=0.4; color='c';
+kh=0.01:0.05:2*pi;
+MM=2:2:20;
+rmaxlimit1=zeros(length(gammarange),length(MM));
+rmaxlimit2=zeros(length(gammarange),length(MM));
+rmax=zeros(length(gammarange),length(MM),length(kh));
+for j=1:length(gammarange)
+    gamma0=gammarange(j);
+    RMAXCG=zeros(1,10);
+    RMAXCGVS=zeros(1,10);
+    for l=1:length(MM)
+        M=MM(l);
+        b=10000;bb=10000; 
+        for q=1:length(kh)
+            k=kh(q);
+            rp=vp0*dt/dh;
+            CG_D_Set_FD_coefficients
+            % k=2*pi*fc/vp0;
+            [st1,~]=Z_Function_CG_ElasticFD_Stability_rmax(M,gamma0,dh,k,am,bm);
+            b0=min(st1);
+            rmax(j,l,q)=b0;%gamma M kh
+            if b0<b
+                b=b0;
+            end
+            %% This part is to make .pngs for .gif to explain grid scan
+            % figure(1);hold off;
+            % plot(theta,st,'r');hold on;grid on;
+            % plot(theta,b*ones(1,lengththeta),'b');
+            % xlim([0 pi]);title(['k=',num2str(k),', gamma=',num2str(gamma0)]);xlabel('theta/rad');ylabel('r_m_a_x')
+            % ylim([0 3]);
+            % legend('r_m_a_x curve','min(r_m_a_x) for all kh and theta')
+            % saveas(gcf,['Scanthemin_2M_',num2str(M),'_picture',num2str(q),'.png']);
+            %%DON'T Delete
+        end
+        rmaxlimit1(j,l)=b;
+        RMAXCG(M/2)=b;
+    end
+    if size(gammarange)==9% to make other sizes gammarange code works
+        if gammarange==0.1:0.1:0.9
+        rmaxlimit=rmaxlimit1;
+        save('rmaxlimit.mat',"rmaxlimit")
+        end
+    end
+    figure(8);
+    x=2:2:20;y=RMAXCG;
+    %% Don't Delete this plot(this plot is for PPT presentation)
+    xi=linspace(min(x),max(x),300);yi=interp1(x,y,xi,'spline');
+    %gamma=1 --> acoustic rmax!! Mathematical equivalence
+    plot(x,y*100,'o','DisplayName','CG-acoustic grid scan result',color=color(5,:));hold on;grid on;
+    plot(xi,yi*100,'HandleVisibility','off','LineWidth',1,Color=color(5,:));hold on;grid on;
+    %gamma!=1
+    %plot(xi,yi,'HandleVisibility','off','LineWidth',1,Color=color(j,:));hold on;grid on;
+    %plot(x,y,'o','DisplayName',['CG-f γ=',num2str(gammarange(j))],color=color(j,:));hold on;grid on;
+    title('Stability limits between 2DCGFD and 2DSGFD')
+     % plot(4,0.8012,'b*','LineWidth',2,'DisplayName','Checking Model 1, r=0.8012<0.8013')
+    % plot(4,0.8016,'mo','LineWidth',2,'DisplayName','Checking Model 2, r=0.8016>r_m_a_x')
+     % plot(4,0.802,'r+','LineWidth',2,'DisplayName','Checking Model 3, r=0.802>r_m_a_x')
+    xlabel('Accuracy order 2M')
+    ylabel('r_m_a_x')
+    legend show;
+end

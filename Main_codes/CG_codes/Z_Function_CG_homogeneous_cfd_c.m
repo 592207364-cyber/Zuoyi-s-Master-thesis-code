@@ -1,0 +1,39 @@
+function [cgcfdvp_c,cgcfdvs_c]=Z_Function_CG_homogeneous_cfd_c(phi,vp,dt,dh,M,kh,sourcetype,am,bm,gamma0)
+lengthkh=length(kh);
+rp=vp*dt/dh;
+rp=max(max(rp));
+vs=vp*gamma0;
+rs=vs*dt/dh;
+rs=max(max(rs));
+if sourcetype==1
+    cgcfdvp_c=zeros(1,lengthkh);
+    cgcfdvs_c=zeros(1,lengthkh);
+    for j=1:lengthkh
+        sum1=0;
+        for i=1:M/2
+            sum1=sum1+am(i)*((sin(i*kh(j)*sin(phi)/2))^2+(sin(i*kh(j)*cos(phi)/2))^2);
+        end
+        cgcfdvp_c(j)=2/kh(j)/rp*asin(rp*sqrt(sum1));
+        cgcfdvs_c(j)=2/kh(j)/rs*asin(rs*sqrt(sum1)); 
+    end
+elseif sourcetype==2 || sourcetype==3
+    cgcfdvp_c=zeros(1,lengthkh);
+    cgcfdvs_c=zeros(1,lengthkh);
+    for j=1:lengthkh
+        kxh=kh(j)*sin(phi);kyh=kh(j)*cos(phi);
+        index1=0;index2=0;summ1=0;summ2=0;
+        for i=1:M/2
+            index1=index1+am(i)*(sin(kxh*i/2))^2;
+            index2=index2+am(i)*(sin(kyh*i/2))^2;
+            summ1=summ1+bm(i)*sin(i*kyh);
+            summ2=summ2+bm(i)*sin(i*kxh);
+        end
+        index4=summ2*summ1;
+        A=rp^2*index1+rp^2*gamma0^2*index2;
+        D=rp^2*index2+rp^2*gamma0^2*index1;
+        B=rp^2*(1-gamma0^2)*index4/4;
+        cgcfdvp_c(j)=2/kh(j)/rp*asin(sqrt((A+D+sqrt((A-D)^2+4*B^2))/2));
+        cgcfdvs_c(j)=2/kh(j)/rs*asin(sqrt((A+D-sqrt((A-D)^2+4*B^2))/2));
+    end
+end
+end

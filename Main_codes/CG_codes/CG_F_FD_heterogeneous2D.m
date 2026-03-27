@@ -1,0 +1,252 @@
+%% finite-difference equation
+for n=2:nt-1
+    % apply Ricker wave force source
+    switch sourcetype
+        case 1
+            %function s=Ricker(t,fc,shift)
+            p(xs,zs,n)=p(xs,zs,n)+rickerp(n-1);
+            for i=M+1:nx-M-1
+                for j=M+1:nz-M-1
+                    sum1=0;sum2=0;sum3=0;sum4=0;
+                    for m=1:M/2
+                        sum1=sum1+am(m)*(p(i+m,j,n)+p(i-m,j,n)-2*p(i,j,n));
+                        sum2=sum2+am(m)*(p(i,j+m,n)+p(i,j-m,n)-2*p(i,j,n));
+                        sum3=sum3+bm(m)*(p(i+m,j,n)-p(i-m,j,n))/2/dh;
+                        sum4=sum4+bm(m)*(p(i,j+m,n)-p(i,j-m,n))/2/dh;
+                    end
+                    p(i,j,n+1)=2*p(i,j,n)-p(i,j,n-1)+F(i,j)^2*(sum1+sum2)+(w(i+m,j)-w(i-m,j))./2./dh*lambda(i,j)*dt^2*sum3+(w(i,j+m)-w(i,j-m))./2./dh*lambda(i,j)*dt^2*sum4;
+                end
+            end
+        case 2
+            uz(xs,zs,n) = uz(xs,zs,n) + rickerf(n-1);   %vertical force.
+            for i=M+1:nx-M-1 %need M long grid at boundary for calculating
+                for j=M+1:nz-M-1
+                    % without applying FD coefficient
+                    % l2=F(i,j)^2*(2*ux(i+1,j,n)-2*ux(i,j,n)+ux(i-1,j,n));
+                    % l3=F(i,j)^2/4*(1-gamma(i,j)^2)*(uz(i+1,j+1,n)-uz(i+1,j-1,n)-uz(i-1,j+1,n)+uz(i-1,j-1,n));
+                    % l4=F(i,j)^2*gamma(i,j)^2*(ux(i,j+1,n) - 2*ux(i,j,n) + ux(i,j-1,n));
+                    % ux(i,j,n+1)=l1+l2+l3+l4;
+                    % l1=2*uz(i,j,n) - uz(i,j,n-1) ;
+                    % l2=F(i,j)^2*(2*uz(i,j+1,n)-2*uz(i,j,n)+uz(i,j-1,n));
+                    % l3=F(i,j)^2/4*(1-gamma(i,j)^2)*(ux(i+1,j+1,n)-ux(i+1,j-1,n)-ux(i-1,j+1,n)+ux(i-1,j-1,n));
+                    % l4=F(i,j)^2*gamma(i,j)^2*(uz(i+1,j,n) - 2*uz(i,j,n) + uz(i-1,j,n));
+                    % uz(i,j,n+1)=l1+l2+l3+l4;
+
+                    % with
+                    l1x=2*ux(i,j,n) - ux(i,j,n-1) ;%LHS time discretize
+                    l1z=2*uz(i,j,n) - uz(i,j,n-1) ;%LHS time discretize
+                    l2x=0;l2z=0;%RHS first term
+                    l4x=0;l4z=0;%RHS third term
+                    l3x=0;l3z=0;%RHS second term, mixed derivative
+                    l5x=0;l5z=0;%RHS fouth term,from here the formula will differ from homogeneous one
+                    l6x=0;l6z=0;%--
+                    l7x=0;l7z=0;%--
+                    for m=1:M/2
+                        %x
+                        l2=F(i,j)^2*(ux(i+m,j,n)-2*ux(i,j,n)+ux(i-m,j,n));
+                        l2x=l2x+am(m)*l2;
+                        l4=F(i,j)^2*gamma(i,j)^2*(ux(i,j+m,n) - 2*ux(i,j,n) + ux(i,j-m,n));
+                        l4x=l4x+am(m)*l4;
+
+                        sl3x=0;
+                        for k=1:M/2
+                            l3=F(i,j)^2/4*(1-gamma(i,j)^2)*(uz(i+m,j+k,n)-uz(i-m,j+k,n)-uz(i+m,j-k,n)+uz(i-m,j-k,n));
+                            %l3=F(i,j)^2/4*(1-gamma(i,j)^2)*(uz(i+k,j+m,n)-uz(i-k,j+m,n)-uz(i+k,j-m,n)+uz(i-k,j-m,n));
+                            sl3x=sl3x+bm(k)*l3;
+                        end
+                        l3x=l3x+bm(m)*sl3x;
+                        
+                        sl5x=0;
+                        for k=1:M/2
+                        sl5x=sl5x+bm(k)*(lambda(i+k,j)-lambda(i-k,j))/(2*dh);
+                        end
+                        % l5=dt^2/rho(i,j)*(lambda(i+1,j)-lambda(i-1,j))/(2*dh)*((ux(i+m,j,n)-ux(i-m,j,n))/(2*dh)+(uz(i,j+m,n)-uz(i,j-m,n))/(2*dh));
+                        l5=dt^2/rho(i,j)*sl5x*((ux(i+m,j,n)-ux(i-m,j,n))/(2*dh)+(uz(i,j+m,n)-uz(i,j-m,n))/(2*dh));       
+                        l5x=l5x+bm(m)*l5;
+                        
+                        sl6x=0;
+                        for k=1:M/2
+                        sl6x=sl6x+bm(k)*(mu(i,j+k)-mu(i,j-k))/(2*dh);
+                        end
+                        % l6=dt^2/rho(i,j)*(mu(i,j+1)-mu(i,j-1))/(2*dh)*((ux(i,j+m,n)-ux(i,j-m,n))/(2*dh)+(uz(i+m,j,n)-uz(i-m,j,n))/(2*dh));
+                        l6=dt^2/rho(i,j)*sl6x*((ux(i,j+m,n)-ux(i,j-m,n))/(2*dh)+(uz(i+m,j,n)-uz(i-m,j,n))/(2*dh));
+                        l6x=l6x+bm(m)*l6;
+                        
+                        sl7x=0;
+                        for k=1:M/2
+                        sl7x=sl7x+bm(k)*(mu(i+k,j)-mu(i-k,j))/(2*dh);
+                        end
+                        % l7=2*dt^2/rho(i,j)*(mu(i+1,j)-mu(i-1,j))/(2*dh)*(ux(i+m,j,n)-ux(i-m,j,n))/(2*dh);
+                        l7=2*dt^2/rho(i,j)*sl7x*(ux(i+m,j,n)-ux(i-m,j,n))/(2*dh);
+                        l7x=l7x+bm(m)*l7;
+                        
+
+
+
+
+
+                        %z
+                        l2=F(i,j)^2*(uz(i,j+m,n)-2*uz(i,j,n)+uz(i,j-m,n));
+                        l2z=l2z+am(m)*l2;
+                        l4=F(i,j)^2*gamma(i,j)^2*(uz(i+m,j,n) - 2*uz(i,j,n) + uz(i-m,j,n));
+                        l4z=l4z+am(m)*l4;
+                        sl3z=0;
+                        for k=1:M/2
+                            l3k=F(i,j)^2/4*(1-gamma(i,j)^2)*(ux(i+m,j+k,n)-ux(i+m,j-k,n)-ux(i-m,j+k,n)+ux(i-m,j-k,n));
+                            %l3k=F(i,j)^2/4*(1-gamma(i,j)^2)*(ux(i+k,j+m,n)-ux(i+k,j-m,n)-ux(i-k,j+m,n)+ux(i-k,j-m,n));
+                            sl3z=sl3z+bm(k)*l3k;
+                        end
+                        l3z=l3z+bm(m)*sl3z;
+                    
+
+                        sl5z=0;
+                        for k=1:M/2
+                        sl5z=sl5z+bm(k)*(lambda(i,j+k)-lambda(i,j-k))/(2*dh);
+                        end
+                        % l5=dt^2/rho(i,j)*(lambda(i,j+1)-lambda(i,j-1))/(2*dh)*((ux(i+m,j,n)-ux(i-m,j,n))/(2*dh)+(uz(i,j+m,n)-uz(i,j-m,n))/(2*dh));
+                        l5=dt^2/rho(i,j)*sl5z*((ux(i+m,j,n)-ux(i-m,j,n))/(2*dh)+(uz(i,j+m,n)-uz(i,j-m,n))/(2*dh));    
+                        l5z=l5z+bm(m)*l5;
+                        
+                        sl6z=0;
+                        for k=1:M/2
+                        sl6z=sl6z+bm(k)*(mu(i+k,j)-mu(i-k,j))/(2*dh);
+                        end
+                        % l6=dt^2/rho(i,j)*(mu(i+1,j)-mu(i-1,j))/(2*dh)*((ux(i,j+m,n)-ux(i,j-m,n))/(2*dh)+(uz(i+m,j,n)-uz(i-m,j,n))/(2*dh));
+                        l6=dt^2/rho(i,j)*sl6z*((ux(i,j+m,n)-ux(i,j-m,n))/(2*dh)+(uz(i+m,j,n)-uz(i-m,j,n))/(2*dh));
+                        l6z=l6z+bm(m)*l6;
+                        
+
+                         sl7z=0;
+                        for k=1:M/2
+                        sl7z=sl7z+bm(k)*(mu(i,j+k)-mu(i,j-k))/(2*dh);
+                        end
+                        % l7=2*dt^2/rho(i,j)*(mu(i,j+1)-mu(i,j-1))/(2*dh)*(uz(i,j+m,n)-uz(i,j-m,n))/(2*dh);
+                        l7=2*dt^2/rho(i,j)*sl7z*(uz(i,j+m,n)-uz(i,j-m,n))/(2*dh);
+                        l7z=l7z+bm(m)*l7;
+                    
+                    
+                    end
+
+
+
+
+
+
+                    ux(i,j,n+1)=l1x+l2x+l3x+l4x+l5x+l6x+l7x;
+                    uz(i,j,n+1)=l1z+l2z+l3z+l4z+l5z+l6z+l7z;
+                end
+            end
+
+        case 3
+            ux(xs,zs,n)=ux(xs,zs,n)+rickerf(n-1);    %Horizontal force.
+            for i=M+1:nx-M-1 %need M long grid at boundary for calculating
+                for j=M+1:nz-M-1
+                    % without applying FD coefficient
+                    % l2=F(i,j)^2*(2*ux(i+1,j,n)-2*ux(i,j,n)+ux(i-1,j,n));
+                    % l3=F(i,j)^2/4*(1-gamma(i,j)^2)*(uz(i+1,j+1,n)-uz(i+1,j-1,n)-uz(i-1,j+1,n)+uz(i-1,j-1,n));
+                    % l4=F(i,j)^2*gamma(i,j)^2*(ux(i,j+1,n) - 2*ux(i,j,n) + ux(i,j-1,n));
+                    % ux(i,j,n+1)=l1+l2+l3+l4;
+                    % l1=2*uz(i,j,n) - uz(i,j,n-1) ;
+                    % l2=F(i,j)^2*(2*uz(i,j+1,n)-2*uz(i,j,n)+uz(i,j-1,n));
+                    % l3=F(i,j)^2/4*(1-gamma(i,j)^2)*(ux(i+1,j+1,n)-ux(i+1,j-1,n)-ux(i-1,j+1,n)+ux(i-1,j-1,n));
+                    % l4=F(i,j)^2*gamma(i,j)^2*(uz(i+1,j,n) - 2*uz(i,j,n) + uz(i-1,j,n));
+                    % uz(i,j,n+1)=l1+l2+l3+l4;
+
+                    % with
+                    l1x=2*ux(i,j,n) - ux(i,j,n-1) ;%LHS time discretize
+                    l1z=2*uz(i,j,n) - uz(i,j,n-1) ;%LHS time discretize
+                    l2x=0;l2z=0;%RHS first term
+                    l4x=0;l4z=0;%RHS third term
+                    l3x=0;l3z=0;%RHS second term, mixed derivative
+                    l5x=0;l5z=0;%RHS fouth term,from here the formula will differ from homogeneous one
+                    l6x=0;l6z=0;%--
+                    l7x=0;l7z=0;%--
+                    for m=1:M/2
+                        %x
+                        l2=F(i,j)^2*(ux(i+m,j,n)-2*ux(i,j,n)+ux(i-m,j,n));
+                        l2x=l2x+am(m)*l2;
+                        l4=F(i,j)^2*gamma(i,j)^2*(ux(i,j+m,n) - 2*ux(i,j,n) + ux(i,j-m,n));
+                        l4x=l4x+am(m)*l4;
+
+                        sl3x=0;
+                        for k=1:M/2
+                            l3=F(i,j)^2/4*(1-gamma(i,j)^2)*(uz(i+m,j+k,n)-uz(i-m,j+k,n)-uz(i+m,j-k,n)+uz(i-m,j-k,n));
+                            %l3=F(i,j)^2/4*(1-gamma(i,j)^2)*(uz(i+k,j+m,n)-uz(i-k,j+m,n)-uz(i+k,j-m,n)+uz(i-k,j-m,n));
+                            sl3x=sl3x+bm(k)*l3;
+                        end
+                        l3x=l3x+bm(m)*sl3x;
+                        
+                        sl5x=0;
+                        for k=1:M/2
+                        sl5x=sl5x+bm(k)*(lambda(i+k,j)-lambda(i-k,j))/(2*dh);
+                        end
+                        % l5=dt^2/rho(i,j)*(lambda(i+1,j)-lambda(i-1,j))/(2*dh)*((ux(i+m,j,n)-ux(i-m,j,n))/(2*dh)+(uz(i,j+m,n)-uz(i,j-m,n))/(2*dh));
+                        l5=dt^2/rho(i,j)*sl5x*((ux(i+m,j,n)-ux(i-m,j,n))/(2*dh)+(uz(i,j+m,n)-uz(i,j-m,n))/(2*dh));       
+                        l5x=l5x+bm(m)*l5;
+                        
+                        sl6x=0;
+                        for k=1:M/2
+                        sl6x=sl6x+bm(k)*(mu(i,j+k)-mu(i,j-k))/(2*dh);
+                        end
+                        % l6=dt^2/rho(i,j)*(mu(i,j+1)-mu(i,j-1))/(2*dh)*((ux(i,j+m,n)-ux(i,j-m,n))/(2*dh)+(uz(i+m,j,n)-uz(i-m,j,n))/(2*dh));
+                        l6=dt^2/rho(i,j)*sl6x*((ux(i,j+m,n)-ux(i,j-m,n))/(2*dh)+(uz(i+m,j,n)-uz(i-m,j,n))/(2*dh));
+                        l6x=l6x+bm(m)*l6;
+                        
+                        sl7x=0;
+                        for k=1:M/2
+                        sl7x=sl7x+bm(k)*(mu(i+k,j)-mu(i-k,j))/(2*dh);
+                        end
+                        % l7=2*dt^2/rho(i,j)*(mu(i+1,j)-mu(i-1,j))/(2*dh)*(ux(i+m,j,n)-ux(i-m,j,n))/(2*dh);
+                        l7=2*dt^2/rho(i,j)*sl7x*(ux(i+m,j,n)-ux(i-m,j,n))/(2*dh);
+                        l7x=l7x+bm(m)*l7;
+                        
+
+
+
+
+
+                        %z
+                        l2=F(i,j)^2*(uz(i,j+m,n)-2*uz(i,j,n)+uz(i,j-m,n));
+                        l2z=l2z+am(m)*l2;
+                        l4=F(i,j)^2*gamma(i,j)^2*(uz(i+m,j,n) - 2*uz(i,j,n) + uz(i-m,j,n));
+                        l4z=l4z+am(m)*l4;
+                        sl3z=0;
+                        for k=1:M/2
+                            l3k=F(i,j)^2/4*(1-gamma(i,j)^2)*(ux(i+m,j+k,n)-ux(i+m,j-k,n)-ux(i-m,j+k,n)+ux(i-m,j-k,n));
+                            %l3k=F(i,j)^2/4*(1-gamma(i,j)^2)*(ux(i+k,j+m,n)-ux(i+k,j-m,n)-ux(i-k,j+m,n)+ux(i-k,j-m,n));
+                            sl3z=sl3z+bm(k)*l3k;
+                        end
+                        l3z=l3z+bm(m)*sl3z;
+                    
+
+                        sl5z=0;
+                        for k=1:M/2
+                        sl5z=sl5z+bm(k)*(lambda(i,j+k)-lambda(i,j-k))/(2*dh);
+                        end
+                        % l5=dt^2/rho(i,j)*(lambda(i,j+1)-lambda(i,j-1))/(2*dh)*((ux(i+m,j,n)-ux(i-m,j,n))/(2*dh)+(uz(i,j+m,n)-uz(i,j-m,n))/(2*dh));
+                        l5=dt^2/rho(i,j)*sl5z*((ux(i+m,j,n)-ux(i-m,j,n))/(2*dh)+(uz(i,j+m,n)-uz(i,j-m,n))/(2*dh));    
+                        l5z=l5z+bm(m)*l5;
+                        
+                        sl6z=0;
+                        for k=1:M/2
+                        sl6z=sl6z+bm(k)*(mu(i+k,j)-mu(i-k,j))/(2*dh);
+                        end
+                        % l6=dt^2/rho(i,j)*(mu(i+1,j)-mu(i-1,j))/(2*dh)*((ux(i,j+m,n)-ux(i,j-m,n))/(2*dh)+(uz(i+m,j,n)-uz(i-m,j,n))/(2*dh));
+                        l6=dt^2/rho(i,j)*sl6z*((ux(i,j+m,n)-ux(i,j-m,n))/(2*dh)+(uz(i+m,j,n)-uz(i-m,j,n))/(2*dh));
+                        l6z=l6z+bm(m)*l6;
+                        
+
+                         sl7z=0;
+                        for k=1:M/2
+                        sl7z=sl7z+bm(k)*(mu(i,j+k)-mu(i,j-k))/(2*dh);
+                        end
+                        % l7=2*dt^2/rho(i,j)*(mu(i,j+1)-mu(i,j-1))/(2*dh)*(uz(i,j+m,n)-uz(i,j-m,n))/(2*dh);
+                        l7=2*dt^2/rho(i,j)*sl7z*(uz(i,j+m,n)-uz(i,j-m,n))/(2*dh);
+                        l7z=l7z+bm(m)*l7;
+                    
+                    
+                    end
+            end
+    end
+    end
+end

@@ -1,0 +1,194 @@
+%% Analytical solution
+%% GF2Del   % % [vx,vy,t]=GF2Del(fc,vp0,vs0,rho,dt,T,x,y)
+switch FD
+    case 'CG'
+        char1='u';
+        as_ux=zeros(nr,nt);as_uz=zeros(nr,nt);%% as means analytical solution
+        as_p=zeros(nr,nt);
+        R=sqrt((xr-xs).^2+(zr-zs).^2);
+        for c=1:nr
+            [as_ux(c,:),as_uz(c,:),~]=Z_Function_GF2Del(fc,vp0,vs0,rho0,dt,T,(xr(c)-xs)*dh,(zr(c)-zs)*dh,FD);
+            %  ux(c,:)=ux(c,:)+c;
+            % uz(c,:)=uz(c,:)+c;
+            [as_p(c,:),t]=Z_Function_GF2Dac(fc,vp0,R(c),dt,T);
+        end
+
+        for c=1:nr
+            routputx(c,:)=ux(xr(c),zr(c),:);
+            routputz(c,:)=uz(xr(c),zr(c),:);
+            routputp(c,:)=p(xr(c),zr(c),:);
+        end
+    case 'SG'
+        char1='v';
+        %% Analytical solution
+        as_vx=zeros(nr,nt);as_vz=zeros(nr,nt);%% as means analytical solution
+        as_p=zeros(nr,nt);
+        %give the real location of pressure,vx,vz
+        xr_p=xr*dh;zr_p=zr*dh;xs_p=xs*dh;zs_p=zs*dh;
+        xr_vx=xr*dh+0.5*dh;zr_vx=zr*dh;
+        xr_vz=xr*dh;zr_vz=zr*dh+0.5*dh;
+        %calculate the real distance of receivers and source of pressure points
+        R=sqrt((xr_p-xs_p).^2+(zr_p-zs_p).^2);
+        for c=1:nr
+            [as_vx(c,:),as_vz(c,:),~]=Z_Function_GF2Del(fc,vp0,vs0,rho0,dt,T,(xr(c)-xs)*dh,(zr(c)-zs)*dh,FD);
+            %  vx(c,:)=vx(c,:)+c;
+            % vz(c,:)=vz(c,:)+c;
+            [as_p(c,:),t]=Z_Function_GF2Dac(fc,vp0,R(c),dt,T);
+        end
+        as_ux=as_vx;as_uz=as_vz;
+        routputp=zeros(nr,nt);
+        for c=1:nr
+            routputx(c,:)=vx(xr(c),zr(c),:);
+            routputz(c,:)=vz(xr(c),zr(c),:);
+            for n=1:nt-1
+                routputp(c,n)=(p(xr(c),zr(c),n)+p(xr(c),zr(c),n+1))/2;
+            end
+        end
+end
+
+as_outputx=as_ux(:,:);
+as_outputz=as_uz(:,:);
+
+kh=2*pi*fc*dh/vp0;
+lengthkh=length(kh);
+cfdvp_c=zeros(lengthkh,nr);
+cfdvs_c=zeros(lengthkh,nr);
+PHI=0:0.01:2*pi-0.01; %phi is the angle between propagation direction and zaxis
+L2norm_cfdvp_c=zeros(1,length(PHI));
+L2norm_cfdvs_c=zeros(1,length(PHI));
+% for phi=[2*pi/nr:2*pi/nr:pi-2*pi/nr,pi+2*pi/nr:2*pi/nr:2*pi-2*pi/nr]  %phi is the angle between propagation direction and zaxis
+
+
+
+if sourcetype==1
+    char='acoustic';
+    figure(6);
+    nexttile;
+    for c=1:nr
+        plot(t,routputp(c,:)+c,Color='k',linewidth=2.0,DisplayName='FD');hold on;
+        xlim([0 nt*dt]);ylim([-1 nr+1]);grid on;hold on;
+        plot(t,as_p(c,:)+c,'-',Color='r',linewidth=2.0,DisplayName='GF');%*1e12*0.4
+        title(['Normalized p,2M=',num2str(M)]);
+        xlabel('time/s');
+        ylabel('trace ID');
+        legend('FD','GF');
+    end
+    % saveas(gcf,fullfile([ResultFig,'/',FD,'_Seismogram'],['p_seismogram_between_',FD,'FD_and_GF_2M=2_4_6.png']));
+    figure(7);
+    set(gcf, 'Position', [600, 600, 600, 600]);
+    p1=plot(0:2*pi/nr:2*pi,[L2Normpressure,L2Normpressure(1,1)],LineStyle="none",LineWidth=2);grid on;axis tight;xlim([0 2*pi]);xlabel('theta/rad');ylabel('L2-Norm');
+    % p1=polarplot(0:2*pi/nr:2*pi,[L2Normpressure,L2Normpressure(1,1)],LineWidth=1);
+    hold on;
+    legend('M=2','M=4','M=6');
+    if M==2
+        p1.Marker='o';
+    elseif M==4
+        p1.Marker='+';
+    elseif M==6
+        p1.Marker='x';
+    end
+    title(['L2Norm plot between ',FD,'FD P-wave pressure seismograms and analytical solutions']);
+    % ax = gca;
+    % ax.ThetaDir = 'clockwise';
+    % ax.ThetaZeroLocation = 'top';
+    % saveas(gcf,'L2Norm_polarplot_between_CGFD_P_wave_pressure_seismograms_and_analytical_solutions.png');
+    % saveas(gcf,fullfile([ResultFig,'/',FD,'_Accuracy_analysis'],['L2Norm_plot_between_',FD,'FD_P_wave_pressure_seismograms_and_analytical_solutions.png']));
+
+
+
+elseif sourcetype==2
+    char='elastic';
+    %Seismogram
+    figure(M/2+5);
+    tiledlayout(1,2,"TileSpacing","tight","Padding","tight");
+    nexttile;hold off;
+    % subplot(1,2,1);hold off;
+    for c=1:nr
+        plot(t,routputx(c,:)+c,Color='k',linewidth=2.0,DisplayName='FD');
+        xlim([0 nt*dt]);ylim([-1 nr+1]);grid on;hold on;
+        % plot(t,as_outputx(c,:)+c,Color='r',linewidth=2.0,DisplayName='GF');%*1e12*0.4
+    end
+    title(['Normalized waveform ',char1,'_x,2M=',num2str(M)])
+    xlabel('time/s');
+    ylabel('trace ID')
+    l=legend('FD','GF','Location','southwest');
+    l.ItemTokenSize=[20,10];
+    nexttile;hold off;
+    % subplot(1,2,2);hold off;
+    for c=1:nr
+        plot(t,routputz(c,:)+c,Color='k',linewidth=2.0,DisplayName='FD');
+        xlim([0 nt*dt]);ylim([-1 nr+1]);grid on;hold on;
+        plot(t,as_outputz(c,:)+c,Color='r',linewidth=2.0,DisplayName='GF');%*1e12*0.4
+    end
+    title(['Normalized waveform ',char1,'_y,2M=',num2str(M)]);
+    xlabel('time/s');
+    ylabel('trace ID');
+    l=legend('FD','GF','Location','southwest');
+    l.ItemTokenSize=[20,10];
+    
+    
+  % saveas(gcf,fullfile([ResultFig,'/',FD,'_Seismogram'],[FD,'_seismograms_and_analytical_solutions','2M_',num2str(M),'.png']));
+  
+  
+ figure(13);
+set(gcf, 'Color', 'w', 'Position', [100, 100, 900, 500]); 
+tlayout = tiledlayout(1, 2, 'TileSpacing', 'tight', 'Padding', 'tight');
+nexttile;
+
+plot(t, routputx' + (1:nr), 'k', 'LineWidth', 1.5); 
+grid on; hold on;
+xlim([0, nt*dt]); 
+ylim([0, nr+1]);
+
+title_str1 = sprintf('Elastic CG-FD Seismogram of %s_1 (unnormalized), 2M = %d\nv_p = %.1f m/s, v_s = %.1f m/s', ...
+                     char1, M, vp0, vs0);
+title(title_str1, 'Interpreter', 'tex', 'FontSize', 12, 'FontWeight', 'bold');
+xlabel('Time (s)', 'Interpreter', 'tex', 'FontSize', 12, 'FontWeight', 'bold');
+ylabel('Trace ID', 'Interpreter', 'tex', 'FontSize', 12, 'FontWeight', 'bold');
+set(gca, 'FontSize', 11, 'FontName', 'Times New Roman', 'LineWidth', 1.0);
+
+lgd1 = legend('FD', 'Location', 'southwest');
+lgd1.ItemTokenSize = [15, 10];
+nexttile;
+plot(t, routputx'*5 + (1:nr), 'k', 'LineWidth', 1.5); 
+grid on; hold on;
+xlim([nt*dt*0.2, nt*dt]); 
+ylim([0, nr+1]);
+title_str2 = sprintf('Zoomed-in (Ampl.x5) %s_1, 2M = %d\nv_p = %.1f m/s, v_s = %.1f m/s', ...
+                     char1, M, vp0, vs0);
+title(title_str2, 'Interpreter', 'tex', 'FontSize', 12, 'FontWeight', 'bold');
+xlabel('Time (s)', 'Interpreter', 'tex', 'FontSize', 12, 'FontWeight', 'bold');
+ylabel('Trace ID', 'Interpreter', 'tex', 'FontSize', 12, 'FontWeight', 'bold');
+set(gca, 'FontSize', 11, 'FontName', 'Times New Roman', 'LineWidth', 1.0);
+
+lgd2 = legend('FD', 'Location', 'southwest');
+lgd2.ItemTokenSize = [15, 10];
+img_name = fullfile([FD, '_', char1, '_x_seismograms.png']);
+exportgraphics(gcf, img_name, 'Resolution', 600);
+
+
+    if sourcetype==1
+            norm=max(max(abs([p(:,:,n)])));
+            out=p(:,:,n)/norm;
+            char1='pressure';
+        else
+            switch FD
+                case 'CG'
+                    out=ux(:,:,n)/norm;
+                    char1='u_x';
+                case 'SG'
+                    out=vx(:,:,n)/norm;
+                    char1='v_x';
+            end
+        end
+   
+    
+
+
+    
+
+
+
+
+
+end

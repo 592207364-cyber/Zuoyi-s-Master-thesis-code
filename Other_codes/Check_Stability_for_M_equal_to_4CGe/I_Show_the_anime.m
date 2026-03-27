@@ -1,0 +1,69 @@
+clearvars;clc;close all;
+load("Workspace.mat")
+filename = 'animation.gif';
+for n=1:3:nt
+    for c=1:nr
+        switch FD
+            case 'CG'
+                routputx(c,n)=ux(xr(c),zr(c),n);
+                routputz(c,n)=uz(xr(c),zr(c),n);
+                out=ux(:,:,n);
+            case 'SG'
+                routputx(c,n)=vx(xr(c),zr(c),n);
+                out=vx(:,:,n);
+        end
+    end 
+
+    
+
+
+
+
+
+    figure(13);
+            subplot(1,2,1)
+            imagesc(out');hold on;
+            set(gcf, 'Position', [0, 1080, 2000, 600]);%first 2 value is the location at the monitor.
+            for c=1:nr %plot receiver points
+                plot(xr(c),zr(c),'*',Color='b');  hold on;
+            end
+            plot(xs,zs,'*',Color='r') ;hold on;
+            %to check which receiver is the first one and the last one
+            %plot(xr(1),zr(1),'*',Color='g');plot(xr(nr),zr(nr),'*',Color='k');
+            title([FD,char1,' snapshot at t = ',num2str(n*dt),' s',', 2M = ',num2str(M)]);
+            xlabel('X(m)',LineWidth=2);ylabel('Z(m)',LineWidth=2);
+            axis tight;
+            colormap(jet);
+            colorbar;
+  
+            clim([-0.2 0.2])
+            % saveas(gcf,fullfile([FD,'_',char1,'_snapshots_and_seismograms','.png']));
+    figure(13);
+    subplot(1,2,2);
+    % subplot(1,2,1);hold off;
+    t=dt:dt:n*dt;
+    for c=1:nr
+        plot(t,routputx(c,1:n)*5+c,Color='k',linewidth=2.0,DisplayName='FD');hold on;
+        xlim([0 nt*dt]);ylim([-1 nr+1]);grid on;
+        % plot(t,as_outputx(c,:)+c,Color='r',linewidth=2.0,DisplayName='GF');%*1e12*0.4
+        
+    end
+    
+    title(['Seismogram ',char1,', t = ',num2str(n*dt),' s',',2M=',num2str(M)])
+    xlabel('time/s');
+    ylabel('trace ID')
+    l=legend('FD','Location','southwest');
+    l.ItemTokenSize=[20,10];
+    % saveas(gcf,fullfile([FD,'_',char1,'_x_snapshots_and_seismograms','.png']));
+
+    drawnow;
+    frame = getframe(gcf);
+    im = frame2im(frame);
+    [imind, cm] = rgb2ind(im, 256);
+    if n == 1
+        imwrite(imind, cm, filename, 'gif', 'Loopcount', inf, 'DelayTime', 0.1);
+    else
+        imwrite(imind, cm, filename, 'gif', 'WriteMode', 'append', 'DelayTime', 0.1);
+    end
+
+end

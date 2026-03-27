@@ -1,0 +1,17 @@
+%% image the velocity model
+figure(1);
+set(gcf, 'Position', [0, 0, 920, 445]);
+tiledlayout(1,2,"TileSpacing","tight","Padding","tight");
+nexttile;
+imagesc(alpha'); 
+colorbar;
+clim([0 3000]);
+title('Velocity of P-wave');xlabel('x_1(m)');ylabel('x_2(m)');
+set(gca,'XTick', 0:nx/10:nx,'XTickLabel', 0:nx/10*dh:nx*dh);
+nexttile;
+imagesc(beta');
+colorbar;
+clim([0 3000]);
+title('Velocity of S-wave');xlabel('x_1(m)');ylabel('x_2(m)');
+set(gca,'ZTick', 0:nx/10:nx,'ZTickLabel', 0:nx/10*dh:nx*dh);
+saveas(gcf,fullfile([ResultFig,'/'],'velocity.png'));
