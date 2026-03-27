@@ -159,6 +159,10 @@ if sourcetype==1
     if model==2
     sg_str = sprintf('Normalized seismograms of %s %s-FD' , ...
                   char,FD);
+    if exist('routputp1')
+        sg_str = sprintf('Normalized %s seismograms: CG-FD vs. SG-FD' , ...
+                  char);
+    end
     end
     sgtitle(sg_str, 'Interpreter', 'tex', 'FontSize', 12, 'FontWeight', 'bold');
     saveas(gcf,fullfile([ResultFig,'/',FD,'_Seismogram'],['p_seismogram_between_',FD,'FD_and_GF_2M=2_4_6.png']));
@@ -246,6 +250,10 @@ elseif sourcetype==2
     if model==2
     sg_str = sprintf('Normalized seismograms of %s %s-FD' , ...
                   char,FD);
+    if exist('routputx1')
+        sg_str = sprintf('Normalized %s seismograms: CG-FD vs. SG-FD' , ...
+                  char);
+    end
     end
     sgtitle(sg_str, 'Interpreter', 'tex', 'FontSize', 12, 'FontWeight', 'bold');
     saveas(gcf,fullfile([ResultFig,'/',FD,'_Seismogram'],[FD,'x_seismograms_and_analytical_solutions','2M_246.png']));
@@ -284,6 +292,10 @@ elseif sourcetype==2
     if model==2
     sg_str = sprintf('Normalized seismograms of %s %s-FD' , ...
                   char,FD);
+    if exist('routputz1')
+        sg_str = sprintf('Normalized %s seismograms: CG-FD vs. SG-FD' , ...
+                  char);
+    end
     end
     sgtitle(sg_str, 'Interpreter', 'tex', 'FontSize', 12, 'FontWeight', 'bold');
     saveas(gcf,fullfile([ResultFig,'/',FD,'_Seismogram'],[FD,'z_seismograms_and_analytical_solutions','2M_246.png']));
