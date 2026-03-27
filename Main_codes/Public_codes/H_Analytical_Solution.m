@@ -54,7 +54,7 @@ L2Normpressure=zeros(1,nr);
 
 % !! The norm of seismograms doesnt work in heterogeneous media!(the time window position is not correct)
 if model==2
-    disp('**!!!The norm of seismograms doesnt work in heterogeneous media!!!**(the time window position is not correct in the original codes)');
+    disp('The norm of seismograms doesnt work in heterogeneous media!(the time window position is not corrected)');
 end
 
 
@@ -134,8 +134,11 @@ if sourcetype==1
     figure(6);set(gcf, 'Position', [600, 600, 600, 400]);
     nexttile;
     for c=1:nr
-        plot(t,routputp(c,:)+c,Color='k',linewidth=2.0,DisplayName='FD');hold on;
+        plot(t,routputp(c,:)+c,Color='k',linewidth=2.0,DisplayName=[FD,'-FD']);hold on;
         xlim([0 nt*dt]);ylim([-2 nr+1]);grid on;hold on;
+        if exist('routputp1')
+            plot(t,routputp1(c,:)+c,Color='b',linewidth=2.0,DisplayName='CG-FD');
+        end
         if model==1
         plot(t,as_p(c,:)+c,'-',Color='r',linewidth=2.0,DisplayName='GF');%*1e12*0.4
         end
@@ -144,6 +147,8 @@ if sourcetype==1
         ylabel('trace ID');
         if model==1
         lgd = legend('FD','GF','Location', 'southeast');
+        elseif exist('routputp1')
+            lgd = legend([FD,'-FD'],'CG-FD','Location', 'southeast');
         else
             lgd = legend('FD','Location', 'southeast');
         end
@@ -215,13 +220,18 @@ elseif sourcetype==2
     nexttile;hold off;
     % subplot(1,2,1);hold off;
     for c=1:nr
-        plot(t,routputx(c,:)+c,Color='k',linewidth=2.0,DisplayName='FD');
+        plot(t,routputx(c,:)+c,Color='k',linewidth=2.0,DisplayName=[FD,'-FD']);
         xlim([0 nt*dt]);ylim([-2.2 nr+1]);grid on;hold on;
+        if exist('routputx1')
+            plot(t,routputx1(c,:)+c,Color='b',linewidth=2.0,DisplayName='CG-FD');
+        end
         if model==1
         plot(t,as_outputx(c,:)+c,Color='r',linewidth=2.0,DisplayName='GF');%*1e12*0.4
         end
         if model==1
         lgd = legend('FD','GF','Location', 'southeast');
+        elseif exist('routputx1')
+            lgd = legend([FD,'-FD'],'CG-FD','Location', 'southeast');
         else
             lgd = legend('FD','Location', 'southeast');
         end
@@ -246,8 +256,11 @@ elseif sourcetype==2
     nexttile;hold off;
     % subplot(1,2,2);hold off;
     for c=1:nr
-        plot(t,routputz(c,:)+c,Color='k',linewidth=2.0,DisplayName='FD');
+        plot(t,routputz(c,:)+c,Color='k',linewidth=2.0,DisplayName=[FD,'-FD']);
         xlim([0 nt*dt]);ylim([-2.2 nr+1]);grid on;hold on;
+        if exist('routputz1')
+            plot(t,routputz1(c,:)+c,Color='b',linewidth=2.0,DisplayName='CG-FD');
+        end
         if model==1
         plot(t,as_outputz(c,:)+c,Color='r',linewidth=2.0,DisplayName='GF');%*1e12*0.4
         end
@@ -259,6 +272,8 @@ elseif sourcetype==2
     ylabel('trace ID');
    if model==1
         lgd = legend('FD','GF','Location', 'southeast');
+        elseif exist('routputz1')
+            lgd = legend([FD,'-FD'],'CG-FD','Location', 'southeast');
         else
             lgd = legend('FD','Location', 'southeast');
         end
