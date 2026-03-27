@@ -46,7 +46,7 @@ xr=round(xs+xr);
 zr=round(zs+zr)+50;%change xr zr from the raletive position of source to grid coodinate
 %% receivers output
 routputx=zeros(nr,nt);routputz=zeros(nr,nt);
-    disp('Velocity model2: Heterogeneous Model with a Central Anomaly');
+    disp('Velocity model2: 2-layer');
     vp0=2000.0;vs0=800.0;rho0=2000.0;
     vp1=2500.0;vs1=900.0;rho1=5000.0;
     squarex1=-129;squarex2=130;squarez1=50;squarez2=130;
