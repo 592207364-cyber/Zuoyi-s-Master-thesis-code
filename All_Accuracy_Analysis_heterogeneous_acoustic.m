@@ -20,9 +20,13 @@ for M=2:2:6
     H_Analytical_Solution;
 
 end
+save('Workspace.mat');
 
 % pause;
 clearvars;clc;close all;
+tempData = load('Workspace.mat', 'routputp'); 
+routputp1 = tempData.routputp;
+clear tempData;
 addpath(genpath("Main_codes/"));
 addpath(genpath("ResultFig_heterogeneous/"));
 ResultFig=fullfile('ResultFig_heterogeneous');
